@@ -1,0 +1,2 @@
+https://github.com/dneise/fitsio/archive/master.tar.gz
+https://github.com/fact-project/zfits/archive/master.tar.gz
