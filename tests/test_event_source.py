@@ -3,8 +3,8 @@
 def test_event_source():
     from ctapipe_fact.zfits import fact_event_generator
     gen = fact_event_generator(
-        'tests/resources/testDataFile.fits.fz',
-        'tests/resources/testDrsFile.drs.fits.gz'
+        'tests/resources/20160817_016.fits.fz',
+        'tests/resources/20160817_027.drs.fits.gz'
     )
     events = [e for e in gen]
 
