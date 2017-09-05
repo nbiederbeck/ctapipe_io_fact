@@ -5,16 +5,18 @@ from astropy.time import Time
 from .instrument import FACT
 
 
-def fact_event_generator(inputfile, drsfile):
+def fact_event_generator(inputfile, drsfile, allowed_triggers=None):
     fact_fits_calib = FactFitsCalib(inputfile, drsfile)
 
     header = fact_fits_calib.data_file.header()
 
     for event in fact_fits_calib:
+        print(event['EventNum'][0])
         trigger_type = event['TriggerType'][0]
 
-        if trigger_type != 4:
-            continue
+        if allowed_triggers is not None:
+            if trigger_type not in allowed_triggers:
+                continue
 
         event_id = event['EventNum'][0]
 
