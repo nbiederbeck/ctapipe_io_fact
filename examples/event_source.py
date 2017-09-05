@@ -5,6 +5,8 @@ from ctapipe.visualization import CameraDisplay
 from ctapipe.instrument import CameraGeometry
 from ctapipe.calib.camera import CameraDL1Calibrator
 from ctapipe.image.charge_extractors import LocalPeakIntegrator
+from ctapipe.image.hillas import hillas_parameters
+from ctapipe.image.cleaning import tailcuts_clean
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -12,8 +14,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 integrator = LocalPeakIntegrator(config=None, tool=None)
 integrator.window_shift = 5
 integrator.window_width = 30
-integrator.sig_amp_cut_HG = 0.1 / 230
-integrator.sig_amp_cut_LG = 0.1 / 230
 
 dl1_calibrator = CameraDL1Calibrator(
     config=None,
@@ -30,24 +30,55 @@ def main():
     args = parser.parse_args()
     event_generator = fact_event_generator(args.inputfile, args.drsfile)
 
-    fig = plt.figure(figsize=(8, 8))
-    ax = fig.add_axes([0, 0, 0.9, 1])
-    ax.set_axis_off()
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes('right', size="5%", pad=0.05)
+    fig = plt.figure(figsize=(12, 6))
+    ax1 = fig.add_axes([0, 0, 0.4, 1])
+    ax1.set_axis_off()
+    divider = make_axes_locatable(ax1)
+    cax1 = divider.append_axes('right', size="5%", pad=0.05)
+
+    ax2 = fig.add_axes([0.5, 0.0, 0.4, 1])
+    ax2.set_axis_off()
+    divider = make_axes_locatable(ax2)
+    cax2 = divider.append_axes('right', size="5%", pad=0.05)
 
     geom = CameraGeometry.from_name('FACT')
-    disp = CameraDisplay(geom, ax=ax)
-    disp.add_colorbar(cax=cax, label='Photons')
+
+    disp1 = CameraDisplay(geom, ax=ax1)
+    disp1.add_colorbar(cax=cax1, label='Photons')
+    disp2 = CameraDisplay(geom, ax=ax2)
+    disp2.add_colorbar(cax=cax2, label='ArrivalTime')
+
+    ax1.set_title('Photons')
+    ax2.set_title('Peak Position')
 
     for e in event_generator:
 
         dl1_calibrator.calibrate(e)
 
-        print(e.dl1.tel[0])
-        disp.image = e.dl1.tel[0].image[0]
+        image = e.dl1.tel[0].image[0]
+        cleaning_mask = tailcuts_clean(geom, image, 6, 4)
 
-        ax.set_title('FACT Event {}'.format(e.trig.gps_time.iso))
+
+
+        if sum(cleaning_mask) < 5:
+            continue
+
+        hillas_container = hillas_parameters(
+            geom.pix_x[cleaning_mask],
+            geom.pix_y[cleaning_mask],
+            image[cleaning_mask],
+        )
+
+        disp1.overlay_moments(hillas_container, linewidth=1.5, color='c', with_label=False)
+        disp1.highlight_pixels(cleaning_mask)
+
+        disp1.image = e.dl1.tel[0].image[0]
+        disp2.image = e.dl1.tel[0].peakpos[0]
+
+        for disp in (disp1, disp2):
+            disp.highlight_pixels(cleaning_mask, color='r', linewidth=1.5)
+
+        fig.suptitle('FACT Event {}'.format(e.trig.gps_time.iso))
 
         plt.pause(0.01)
         input('Press enter for next event')
