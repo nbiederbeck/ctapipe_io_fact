@@ -15,6 +15,7 @@ setup(
     install_requires=[
         'ctapipe',
         'zfits>=0.0.6',
+        'sortedcontainers',
     ],
     zip_safe=False,
 )
