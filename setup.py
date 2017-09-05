@@ -14,7 +14,7 @@ setup(
     setup_requires=['pytest-runner'],
     install_requires=[
         'ctapipe',
-        'zfits',
+        'zfits>=0.0.6',
     ],
     zip_safe=False,
 )
