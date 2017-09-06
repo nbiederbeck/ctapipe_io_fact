@@ -5,7 +5,7 @@ from ctapipe.visualization import CameraDisplay
 from ctapipe.instrument import CameraGeometry
 from ctapipe.calib.camera import CameraDL1Calibrator
 from ctapipe.image.charge_extractors import LocalPeakIntegrator
-from ctapipe.image.hillas import hillas_parameters
+from ctapipe.image.hillas import hillas_parameters_5 as hillas_parameters
 from ctapipe.image.cleaning import tailcuts_clean
 
 import matplotlib.pyplot as plt
@@ -28,7 +28,10 @@ parser.add_argument('drsfile')
 
 def main():
     args = parser.parse_args()
-    event_generator = fact_event_generator(args.inputfile, args.drsfile)
+    event_generator = fact_event_generator(
+        args.inputfile, args.drsfile,
+        allowed_triggers={4},
+    )
 
     fig = plt.figure(figsize=(12, 6))
     ax1 = fig.add_axes([0, 0, 0.4, 1])
@@ -56,11 +59,9 @@ def main():
         dl1_calibrator.calibrate(e)
 
         image = e.dl1.tel[0].image[0]
-        cleaning_mask = tailcuts_clean(geom, image, 6, 4)
+        cleaning_mask = tailcuts_clean(geom, image, 5, 3.5)
 
-
-
-        if sum(cleaning_mask) < 5:
+        if sum(cleaning_mask) < 15:
             continue
 
         hillas_container = hillas_parameters(

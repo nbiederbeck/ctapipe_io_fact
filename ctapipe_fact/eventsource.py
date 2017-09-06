@@ -5,7 +5,7 @@ from astropy.time import Time
 from .instrument import FACT
 
 
-def fact_event_generator(inputfile, drsfile, allowed_triggers=None):
+def fact_event_generator(inputfile, drsfile, auxpath='/fact/aux', allowed_triggers=None):
     fact_fits_calib = FactFitsCalib(inputfile, drsfile)
 
     header = fact_fits_calib.data_file.header()
