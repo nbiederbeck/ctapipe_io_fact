@@ -5,10 +5,12 @@ import astropy.units as u
 from fact.instrument.camera import reorder_softid2chid
 
 from .instrument import FACT
+from .aux import AUXService
 
 
 def fact_event_generator(inputfile, drsfile, auxpath='/fact/aux', allowed_triggers=None):
     fact_fits_calib = FactFitsCalib(inputfile, drsfile)
+    auxservice = AUXService(auxpath)
 
     header = fact_fits_calib.data_file.header()
 
@@ -42,6 +44,10 @@ def fact_event_generator(inputfile, drsfile, auxpath='/fact/aux', allowed_trigge
             event['CalibData'] = reorder_softid2chid(event['CalibData'])
             event['McCherPhotWeight'] = reorder_softid2chid(event['McCherPhotWeight'])
             add_mc_data(event, data)
+        else:
+            pointing, source = auxservice.get_aux_point(data.trig.gps_time)
+            data.pointing[0].azimuth = pointing['Az'] * u.deg
+            data.pointing[0].altitude = (90 - pointing['Zd']) * u.deg
 
         data.trig.tels_with_trigger = [0]
         data.inst = FACT
@@ -70,3 +76,6 @@ def add_mc_data(event, data):
     data.mc.core_y = event['MCorsikaEvtHeader.fY'] * u.cm
     data.mc.h_first_int = event['CorsikaEvtHeader.fFirstInteractionHeight']
     data.mc.tel[0].photo_electron_image = event['McCherPhotWeight']
+
+    data.pointing[0].azimuth = event['MPointingPos.fAz'] * u.deg
+    data.pointing[0].altitude = (90 - event['MPointingPos.fZd']) * u.deg
