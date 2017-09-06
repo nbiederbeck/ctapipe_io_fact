@@ -1,6 +1,8 @@
 from zfits import FactFitsCalib
 from ctapipe.io.containers import DataContainer
 from astropy.time import Time
+import astropy.units as u
+from fact.instrument.camera import reorder_softid2chid
 
 from .instrument import FACT
 
@@ -11,14 +13,13 @@ def fact_event_generator(inputfile, drsfile, auxpath='/fact/aux', allowed_trigge
     header = fact_fits_calib.data_file.header()
 
     for event in fact_fits_calib:
-        print(event['EventNum'][0])
-        trigger_type = event['TriggerType'][0]
+        trigger_type = event['TriggerType']
 
         if allowed_triggers is not None:
             if trigger_type not in allowed_triggers:
                 continue
 
-        event_id = event['EventNum'][0]
+        event_id = event['EventNum']
 
         night = header['NIGHT']
         run_id = header['RUNID']
@@ -26,13 +27,23 @@ def fact_event_generator(inputfile, drsfile, auxpath='/fact/aux', allowed_trigge
         data = DataContainer()
         data.meta['origin'] = 'FACT'
 
-        data.trig.gps_time = Time(
-            event['UnixTimeUTC'][0] + event['UnixTimeUTC'][1] * 1e-6,
-            scale='utc',
-            format='unix',
-        )
-        data.trig.tels_with_trigger = [0]
+        if 'UnixTimeUTC' in event:
+            mc = False
+            data.trig.gps_time = Time(
+                event['UnixTimeUTC'][0] + event['UnixTimeUTC'][1] * 1e-6,
+                scale='utc',
+                format='unix',
+            )
+        else:
+            mc = True
+            data.trig.gps_time = Time.now()
 
+        if mc:
+            event['CalibData'] = reorder_softid2chid(event['CalibData'])
+            event['McCherPhotWeight'] = reorder_softid2chid(event['McCherPhotWeight'])
+            add_mc_data(event, data)
+
+        data.trig.tels_with_trigger = [0]
         data.inst = FACT
 
         for c in (data.r0, data.r1, data.dl0):
@@ -49,3 +60,13 @@ def fact_event_generator(inputfile, drsfile, auxpath='/fact/aux', allowed_trigge
         data.dl0.tel[0].pe_samples = event['CalibData'].reshape(1, 1440, -1) / 230
 
         yield data
+
+
+def add_mc_data(event, data):
+    data.mc.energy = event['MCorsikaEvtHeader.fTotalEnergy'] * u.GeV
+    data.mc.az = event['MCorsikaEvtHeader.fAz'] * u.deg
+    data.mc.alt = (90 - event['MCorsikaEvtHeader.fZd']) * u.deg
+    data.mc.core_x = event['MCorsikaEvtHeader.fX'] * u.cm
+    data.mc.core_y = event['MCorsikaEvtHeader.fY'] * u.cm
+    data.mc.h_first_int = event['CorsikaEvtHeader.fFirstInteractionHeight']
+    data.mc.tel[0].photo_electron_image = event['McCherPhotWeight']
