@@ -45,9 +45,7 @@ def fact_event_generator(inputfile, drsfile, auxpath='/fact/aux', allowed_trigge
             event['McCherPhotWeight'] = reorder_softid2chid(event['McCherPhotWeight'])
             add_mc_data(event, data)
         else:
-            pointing, source = auxservice.get_aux_point(data.trig.gps_time)
-            data.pointing[0].azimuth = pointing['Az'] * u.deg
-            data.pointing[0].altitude = (90 - pointing['Zd']) * u.deg
+            add_aux_data(auxservice, data)
 
         data.trig.tels_with_trigger = [0]
         data.inst = FACT
@@ -62,15 +60,15 @@ def fact_event_generator(inputfile, drsfile, auxpath='/fact/aux', allowed_trigge
 
         data.r0.tel[0].adc_samples = event['Data'].reshape(1, 1440, -1)
         data.r0.tel[0].num_samples = event['Data'].shape[1]
-        data.r1.tel[0].pe_samples = event['CalibData'].reshape(1, 1440, -1) / 230
-        data.dl0.tel[0].pe_samples = event['CalibData'].reshape(1, 1440, -1) / 230
+        data.r1.tel[0].pe_samples = event['CalibData'].reshape(1, 1440, -1) / 242
+        data.dl0.tel[0].pe_samples = event['CalibData'].reshape(1, 1440, -1) / 242
 
         yield data
 
 
 def add_mc_data(event, data):
     data.mc.energy = event['MCorsikaEvtHeader.fTotalEnergy'] * u.GeV
-    data.mc.az = event['MCorsikaEvtHeader.fAz'] * u.deg
+    data.mc.az = (180 + event['MCorsikaEvtHeader.fAz']) * u.deg
     data.mc.alt = (90 - event['MCorsikaEvtHeader.fZd']) * u.deg
     data.mc.core_x = event['MCorsikaEvtHeader.fX'] * u.cm
     data.mc.core_y = event['MCorsikaEvtHeader.fY'] * u.cm
@@ -79,3 +77,12 @@ def add_mc_data(event, data):
 
     data.pointing[0].azimuth = event['MPointingPos.fAz'] * u.deg
     data.pointing[0].altitude = (90 - event['MPointingPos.fZd']) * u.deg
+
+
+def add_aux_data(auxservice, data):
+    pointing, source = auxservice.get_aux_point(data.trig.gps_time)
+    data.pointing[0].azimuth = (180 + pointing['Az']) * u.deg
+    data.pointing[0].altitude = (90 - pointing['Zd']) * u.deg
+    data.source.name = source['Name']
+    data.source.ra = source['Ra_src'] * u.ha
+    data.source.dec = source['Dec_src'] * u.deg
