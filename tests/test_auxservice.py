@@ -1,4 +1,4 @@
-from ctapipe_fact.aux import AUXService
+from ctapipe_io_fact.aux import AUXService
 from astropy.time import Time
 
 

@@ -4,7 +4,7 @@ EventSource for FACT fits-files.
 
 from astropy.io import fits
 from ctapipe.io import EventSource
-from ctapipe.containers import DataContainer, DL1CameraContainer
+from ctapipe.io.containers import DataContainer, DL1CameraContainer
 
 
 __all__ = ["FACTDL1EventSource"]
