@@ -3,8 +3,13 @@ EventSource for FACT fits-files.
 """
 
 from astropy.io import fits
+from astropy import units as u
 from ctapipe.io import EventSource
-from ctapipe.io.containers import DataContainer, DL1CameraContainer
+from ctapipe.io.containers import (
+    DataContainer,
+    DL1CameraContainer,
+    TelescopePointingContainer,
+)
 
 
 __all__ = ["FACTDL1EventSource"]
@@ -15,12 +20,15 @@ class FACTDL1EventSource(EventSource):
     EventSource for FACT DL1 data.
     """
 
-    def __init__(self, config=None, tool=None, **kwargs):
-        super().__init__(config=config, tool=tool, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.hdulist = fits.open(self.input_url)
         self.events = self.hdulist["Events"].data
         self.header = self.hdulist["Events"].header
+        self.metadata["is_simulation"] = "timestamp" not in list(
+            self.header.values()
+        )
 
     def _generator(self):
         for i in range(self.header["NAXIS2"]):
@@ -30,9 +38,45 @@ class FACTDL1EventSource(EventSource):
                 self.header["NIGHT"] * 1000 + self.header["RUNID"]
             )
             event.r0.event_id = event_data["event_num"]
-            event.dl1.tel[1] = DL1CameraContainer(
-                image=event_data["photoncharge"],
-                peakpos=event_data["arrival_time"],
+
+            if self.metadata["is_simulation"]:
+                event.mc.energy = u.Quantity(
+                    event_data["corsika_event_header_total_energy"], u.GeV
+                )
+                event.mc.core_x = u.Quantity(
+                    event_data["corsika_event_header_x"], u.cm
+                )
+                event.mc.core_y = u.Quantity(
+                    event_data["corsika_event_header_y"], u.cm
+                )
+                event.mc.h_first_int = u.Quantity(
+                    event_data["corsika_event_header_first_interaction_height"]
+                )
+                # event.mc.xmax = u.Quantity(, u.g / u.cm ** 2)
+                event.mc.shower_primary_id = 0
+                event.mc.alt = u.Quantity(
+                    90 - event_data["source_position_zd"], u.deg
+                )
+                event.mc.az = u.Quantity(
+                    event_data["source_position_az"], u.deg
+                )
+                event.mc.tel[1] = DL1CameraContainer(
+                    image=event_data["photoncharge"],
+                    peakpos=event_data["arrival_time"],
+                )
+            else:
+                event.dl0.tel[1].trigger_time = event_data["timestamp"]
+
+                event.dl1.tel[1] = DL1CameraContainer(
+                    image=event_data["photoncharge"],
+                    peakpos=event_data["arrival_time"],
+                )
+
+            event.pointing = TelescopePointingContainer(
+                azimuth=u.Quantity(event_data["pointing_position_az"], u.deg),
+                altitude=u.Quantity(
+                    90 - event_data["pointing_position_zd"], u.deg
+                ),
             )
 
             yield event
@@ -41,12 +85,14 @@ class FACTDL1EventSource(EventSource):
     def is_compatible(cls, input_url):
         try:
             f = fits.open(input_url)
-            if f[0].header["ORIGIN"] != "FACT":
-                return False
-            if "Events" not in f:
-                return False
-
-            columns = f["Events"].data.dtype.names
-            return "photoncharge" in columns and "arrival_time" in columns
         except IOError:
             return False
+
+        if f[0].header["ORIGIN"] != "FACT":
+            return False
+
+        if "Events" not in f:
+            return False
+
+        columns = f["Events"].data.dtype.names
+        return "photoncharge" in columns and "arrival_time" in columns
