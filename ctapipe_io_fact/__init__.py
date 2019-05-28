@@ -25,6 +25,9 @@ class FACTDL1EventSource(EventSource):
         self.header = self.hdulist["Events"].header
         self.metadata["is_simulation"] = "timestamp" not in list(self.header.values())
 
+    def __len__(self):
+        return len(self.events)
+
     def _generator(self):
         for i in range(self.header["NAXIS2"]):
             event_data = self.events[i]
