@@ -32,10 +32,10 @@ class FACTDL1EventSource(EventSource):
         for i in range(self.header["NAXIS2"]):
             event_data = self.events[i]
             event = DataContainer(count=i)
-            for cont in ("r0", "r1", "dl0"):
-                event[cont].obs_id = self.header["NIGHT"] * 1000 + self.header["RUNID"]
-                event[cont].event_id = event_data["event_num"]
-                event[cont].tels_with_data = [1]
+            for level in ("r0", "r1", "dl0"):
+                event[level].obs_id = self.header["NIGHT"] * 1000 + self.header["RUNID"]
+                event[level].event_id = event_data["event_num"]
+                event[level].tels_with_data = [1]
 
             if self.metadata["is_simulation"]:
                 event.mc.energy = u.Quantity(
