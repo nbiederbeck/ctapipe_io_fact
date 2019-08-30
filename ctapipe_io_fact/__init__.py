@@ -72,8 +72,8 @@ class FACTDL1EventSource(EventSource):
                 image=event_data["photoncharge"], pulse_time=event_data["arrival_time"]
             )
         else:
-            event.trig.gps_time = Time(event_data["timestamp"])
-            event.dl0.tel[1].trigger_time = event_data["timestamp"]
+            event.trig.gps_time = Time(event_data["timestamp"], scale="utc")
+            event.dl0.tel[1].trigger_time = Time(event_data["timestamp"], scale="utc")
 
             event.dl1.tel[1] = DL1CameraContainer(
                 image=event_data["photoncharge"], pulse_time=event_data["arrival_time"]
