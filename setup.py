@@ -11,6 +11,6 @@ setup(
     packages=find_packages(),
     tests_require=["pytest>=3.0.0", "pyfact"],
     setup_requires=["pytest-runner"],
-    install_requires=["ctapipe", "sortedcontainers"],
+    install_requires=["ctapipe", "sortedcontainers", "sortedcollections"],
     zip_safe=False,
 )
