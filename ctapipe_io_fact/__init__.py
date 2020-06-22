@@ -5,7 +5,7 @@ from astropy import units as u
 from astropy.io import fits
 from astropy.time import Time
 from ctapipe.io import EventSource
-from ctapipe.io.containers import (
+from ctapipe.containers import (
     DataContainer,
     DL1CameraContainer,
     TelescopePointingContainer,

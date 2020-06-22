@@ -1,5 +1,5 @@
 from zfits import FactFitsCalib
-from ctapipe.io.containers import DataContainer
+from ctapipe.containers import DataContainer
 from astropy.time import Time
 import astropy.units as u
 from fact.instrument.camera import reorder_softid2chid

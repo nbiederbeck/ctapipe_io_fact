@@ -1,4 +1,4 @@
-from ctapipe.io.containers import InstrumentContainer
+from ctapipe.containers import InstrumentContainer
 from fact.instrument.constants import FOCAL_LENGTH_MM
 import astropy.units as u
 import numpy as np
