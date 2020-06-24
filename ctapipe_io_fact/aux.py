@@ -4,7 +4,7 @@ from fact.path import tree_path
 from functools import lru_cache
 from datetime import timedelta
 import numpy as np
-from sortedcollections import SortedDict
+from sortedcontainers import SortedDict
 
 
 class AUXService:
