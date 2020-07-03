@@ -263,6 +263,7 @@ class FACTDL2EventSource(EventSource):
 
         if self.is_simulation:
             event.mcheader = self.mc_header
+            event.index.event_id = data["MCorsikaEvtHeader.fEvtNumber"]
 
         event.dl1.tel[1].image = np.float32(data["photoncharge"])
         event.dl1.tel[1].peak_time = np.float32(data["arrivalTime"])
